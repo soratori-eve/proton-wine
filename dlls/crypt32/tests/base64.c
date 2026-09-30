@@ -610,6 +610,38 @@ static void test_CryptBinaryToString(void)
         ok(strLen == strLen2, "%lu: Expected length %ld, got %ld\n", i, strLen, strLen2);
         ok(!memcmp(hex, cmp, strLen * sizeof(WCHAR)), "%lu: got %s\n", i, wine_dbgstr_wn(hex, strLen));
 
+        /* CRYPT_STRING_HEX with CryptBinaryToStringA */
+        cmp_a = malloc(strLen * sizeof(WCHAR) + 256);
+        for (j = 0; cmp[j]; j++)
+            cmp_a[j] = cmp[j];
+        cmp_a[j] = 0;
+
+        strLen = 0;
+        ret = CryptBinaryToStringA(input, sizes[k], CRYPT_STRING_HEX | flags[i], NULL, &strLen);
+        ok(ret, "CryptBinaryToStringA failed: %ld\n", GetLastError());
+        ok(strLen == strLen2 + 1, "%lu: Expected length %ld, got %ld\n", i, strLen2 + 1, strLen);
+
+        hex_a = malloc(strLen + 256);
+        memset(hex_a, 0xcc, strLen);
+        ret = CryptBinaryToStringA(input, sizes[k], CRYPT_STRING_HEX | flags[i], hex_a, &strLen);
+        ok(ret, "CryptBinaryToStringA failed: %ld\n", GetLastError());
+        ok(strLen == strLen2, "%lu: Expected length %ld, got %ld\n", i, strLen, strLen2);
+        ok(!memcmp(hex_a, cmp_a, strLen), "%lu: got %s\n", i, hex_a);
+
+        /* no writes if buffer too small */
+        strLen = strLen2 - 1;
+        memset(hex_a, 0xcc, strLen2);
+        SetLastError(0xdeadbeef);
+        ret = CryptBinaryToStringA(input, sizes[k], CRYPT_STRING_HEX | flags[i], hex_a, &strLen);
+        ok(!ret && GetLastError() == ERROR_MORE_DATA,
+           "%lu: Expected ERROR_MORE_DATA, got ret=%d le=%lu\n", i, ret, GetLastError());
+        ok(strLen == strLen2 - 1, "%lu: Expected length %ld, got %ld\n", i, strLen2 - 1, strLen);
+        ok((unsigned char)hex_a[0] == 0xcc, "%lu: got %#x.\n", i, (unsigned char)hex_a[0]);
+
+        free(hex_a);
+        free(cmp_a);
+        strLen = strLen2;
+
         /* adjusts size if buffer too big */
         strLen *= 2;
         ret = CryptBinaryToStringW(input, sizes[k], CRYPT_STRING_HEX | flags[i], hex, &strLen);

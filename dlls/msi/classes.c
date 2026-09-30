@@ -656,6 +656,14 @@ static UINT load_classes_and_such( MSIPACKAGE *package )
     return load_all_mimes( package );
 }
 
+/* The class information of a component goes to the registry view of that component, so a 32-bit
+ * component of a 64-bit package is registered in the 32-bit view like native Windows does. */
+static REGSAM get_class_registry_view( const MSICOMPONENT *comp )
+{
+    if (!is_wow64 && !is_64bit) return 0;
+    return (comp->Attributes & msidbComponentAttributes64bit) ? KEY_WOW64_64KEY : KEY_WOW64_32KEY;
+}
+
 static UINT register_appid(const MSIAPPID *appid, LPCWSTR app )
 {
     HKEY hkey2, hkey3;
@@ -689,7 +697,7 @@ static UINT register_appid(const MSIAPPID *appid, LPCWSTR app )
 
 UINT ACTION_RegisterClassInfo(MSIPACKAGE *package)
 {
-    REGSAM access = KEY_ALL_ACCESS;
+    REGSAM access;
     MSIRECORD *uirow;
     HKEY hkey, hkey2, hkey3;
     MSICLASS *cls;
@@ -701,14 +709,6 @@ UINT ACTION_RegisterClassInfo(MSIPACKAGE *package)
     r = load_classes_and_such( package );
     if (r != ERROR_SUCCESS)
         return r;
-
-    if (package->platform == PLATFORM_INTEL)
-        access |= KEY_WOW64_32KEY;
-    else
-        access |= KEY_WOW64_64KEY;
-
-    if (RegCreateKeyExW( HKEY_CLASSES_ROOT, L"CLSID", 0, NULL, 0, access, NULL, &hkey, NULL ))
-        return ERROR_FUNCTION_FAILED;
 
     LIST_FOR_EACH_ENTRY( cls, &package->classes, MSICLASS, entry )
     {
@@ -749,6 +749,10 @@ UINT ACTION_RegisterClassInfo(MSIPACKAGE *package)
         TRACE("Registering class %s (%p)\n", debugstr_w(cls->clsid), cls);
 
         cls->action = INSTALLSTATE_LOCAL;
+
+        access = KEY_ALL_ACCESS | get_class_registry_view( comp );
+        if (RegCreateKeyExW( HKEY_CLASSES_ROOT, L"CLSID", 0, NULL, 0, access, NULL, &hkey, NULL ))
+            return ERROR_FUNCTION_FAILED;
 
         RegCreateKeyW( hkey, cls->clsid, &hkey2 );
 
@@ -816,6 +820,7 @@ UINT ACTION_RegisterClassInfo(MSIPACKAGE *package)
         if (cls->DefInprocHandler32)
             msi_reg_set_subkey_val( hkey2, L"InprocHandler32", NULL, cls->DefInprocHandler32 );
         RegCloseKey(hkey2);
+        RegCloseKey(hkey);
 
         /* if there is a FileTypeMask, register the FileType */
         if (cls->FileTypeMask)
@@ -850,13 +855,12 @@ UINT ACTION_RegisterClassInfo(MSIPACKAGE *package)
         MSI_ProcessMessage(package, INSTALLMESSAGE_ACTIONDATA, uirow);
         msiobj_release(&uirow->hdr);
     }
-    RegCloseKey(hkey);
     return ERROR_SUCCESS;
 }
 
 UINT ACTION_UnregisterClassInfo( MSIPACKAGE *package )
 {
-    REGSAM access = KEY_ALL_ACCESS;
+    REGSAM access;
     MSIRECORD *uirow;
     MSICLASS *cls;
     HKEY hkey, hkey2;
@@ -868,14 +872,6 @@ UINT ACTION_UnregisterClassInfo( MSIPACKAGE *package )
     r = load_classes_and_such( package );
     if (r != ERROR_SUCCESS)
         return r;
-
-    if (package->platform == PLATFORM_INTEL)
-        access |= KEY_WOW64_32KEY;
-    else
-        access |= KEY_WOW64_64KEY;
-
-    if (RegCreateKeyExW( HKEY_CLASSES_ROOT, L"CLSID", 0, NULL, 0, access, NULL, &hkey, NULL ))
-        return ERROR_FUNCTION_FAILED;
 
     LIST_FOR_EACH_ENTRY( cls, &package->classes, MSICLASS, entry )
     {
@@ -909,9 +905,14 @@ UINT ACTION_UnregisterClassInfo( MSIPACKAGE *package )
 
         cls->action = INSTALLSTATE_ABSENT;
 
+        access = KEY_ALL_ACCESS | get_class_registry_view( comp );
+        if (RegCreateKeyExW( HKEY_CLASSES_ROOT, L"CLSID", 0, NULL, 0, access, NULL, &hkey, NULL ))
+            return ERROR_FUNCTION_FAILED;
+
         res = RegDeleteTreeW( hkey, cls->clsid );
         if (res != ERROR_SUCCESS)
             WARN("failed to delete class key %ld\n", res);
+        RegCloseKey( hkey );
 
         if (cls->AppID)
         {
@@ -944,7 +945,6 @@ UINT ACTION_UnregisterClassInfo( MSIPACKAGE *package )
         MSI_ProcessMessage(package, INSTALLMESSAGE_ACTIONDATA, uirow);
         msiobj_release( &uirow->hdr );
     }
-    RegCloseKey( hkey );
     return ERROR_SUCCESS;
 }
 
