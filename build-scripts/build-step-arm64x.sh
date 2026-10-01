@@ -22,7 +22,7 @@
 # (arm64x), switch LLVM_MINGW_TOOLCHAIN below to an ARM64X-capable build.
 
 export ARCH="aarch64"
-export WIN_ARCH="arm64ec,aarch64"
+export WIN_ARCH="arm64ec,aarch64,i386"
 export OUTPUT_DIR="$HOME/compiled-files-arm64x"
 
 export deps="$HOME/termuxfs/aarch64/data/data/com.termux/files/usr"
