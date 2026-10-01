@@ -326,7 +326,7 @@ do
     # (path to a prebuilt prefixPack.txz; falls back to an empty one).
     WCP_NAME="${WCP_NAME:-proton-11.0-2-arm64x.wcp}"
     WCP_TYPE="${WCP_TYPE:-Proton}"
-    ARCH_NAME="arm64ec"
+    ARCH_NAME="arm64x"
     WCP_VERSION_CODE="${WCP_VERSION_CODE:-1}"
     WCP_PREFIX_PACK="${WCP_PREFIX_PACK:-}"
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -371,7 +371,7 @@ do
     cat > "$STAGING/profile.json" <<EOF
 {
   "type": "$WCP_TYPE",
-  "versionName": "11.0-2-$ARCH_NAME",
+  "versionName": "11.0-2-arm64ec",
   "versionCode": $WCP_VERSION_CODE,
   "description": "Proton 11.0-2 $ARCH_NAME (bionic) — hybrid ARM64X (ARM64EC+ARM64) PE modules, no x86 wow64. stock Valve + userspace ntsync + fsync + Android fixes. SDK 28 + 16KB pages. Needs a fresh arm64ec container.",
   "files": [],
