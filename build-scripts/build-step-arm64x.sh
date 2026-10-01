@@ -326,7 +326,7 @@ do
     # (path to a prebuilt prefixPack.txz; falls back to an empty one).
     WCP_NAME="${WCP_NAME:-proton-11.0-2-arm64x.wcp}"
     WCP_TYPE="${WCP_TYPE:-Proton}"
-    ARCH_NAME="arm64x"
+    ARCH_NAME="arm64ec"
     WCP_VERSION_CODE="${WCP_VERSION_CODE:-1}"
     WCP_PREFIX_PACK="${WCP_PREFIX_PACK:-}"
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
