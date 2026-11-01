@@ -321,7 +321,7 @@ static const struct expected_blob b1[] = {
     {FILE_TOTAL-FILE_IDATA-FIELD_OFFSET(struct imports, ibn),
         &bin.idata_section.ibn}
 };
-static const struct expected_update_accum a1 = { ARRAY_SIZE(b1), b1, TRUE };
+static const struct expected_update_accum a1 = { ARRAY_SIZE(b1), b1, FALSE };
 
 static const struct expected_blob b2[] = {
     {FILE_PE_START,  &bin},
@@ -346,7 +346,7 @@ static const struct expected_blob b3[] = {
      &bin64.idata_section.descriptors[0].Name},
     {FILE_TOTAL - FILE_IDATA - FIELD_OFFSET(struct imports64, ibn), &bin64.idata_section.ibn}
 };
-static const struct expected_update_accum a3 = { ARRAY_SIZE(b3), b3, TRUE };
+static const struct expected_update_accum a3 = { ARRAY_SIZE(b3), b3, FALSE };
 
 static const struct expected_blob b4[] = {
     {FILE_PE_START,  &bin64},
